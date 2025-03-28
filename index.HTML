@@ -128,4 +128,175 @@
   </style>
 </head>
 <body>
-  <button onclick="open
+  <button onclick="openTab('review')">Review</button>
+  <button onclick="openTab('manage')">Manage Questions</button>
+
+  <!-- Review Tab -->
+  <div id="review" class="tab active">
+    <h2 class="review-header">DECK MANAGEMENT LEVEL REVIEW</h2>
+    <select id="subjectSelect" onchange="startQuiz()">
+      <option value="">Select a Subject</option>
+      <option value="F1">F1</option>
+      <option value="F2">F2</option>
+      <option value="F3">F3</option>
+      <option value="F4">F4</option>
+      <option value="F5">F5</option>
+      <option value="F6">F6</option>
+      <option value="F8">F8</option>
+      <option value="F9">F9</option>
+      <option value="F10">F10</option>
+      <option value="F11">F11</option>
+      <option value="F12">F12</option>
+      <option value="F13">F13</option>
+      <option value="F14">F14</option>
+      <option value="F15">F15</option>
+      <option value="F16">F16</option>
+      <option value="F17">F17</option>
+      <option value="F19">F19</option>
+      <option value="F20">F20</option>
+    </select>
+    <div id="quizContainer"></div>
+    <!-- Score display now shows "Score: X / Y" -->
+    <p id="score">Score: 0 / 0</p>
+    <div id="controlButtons">
+      <div id="nextButtonContainer"></div>
+      <button onclick="resetQuiz()">Reset Quiz</button>
+    </div>
+  </div>
+
+  <!-- Manage Questions Tab -->
+  <div id="manage" class="tab">
+    <h2>Manage Questions</h2>
+    <select id="manageSubjectSelect" onchange="loadQuestions()">
+      <option value="">Select a Subject</option>
+      <option value="F1">F1</option>
+      <option value="F2">F2</option>
+      <option value="F3">F3</option>
+      <option value="F4">F4</option>
+      <option value="F5">F5</option>
+      <option value="F6">F6</option>
+      <option value="F8">F8</option>
+      <option value="F9">F9</option>
+      <option value="F10">F10</option>
+      <option value="F11">F11</option>
+      <option value="F12">F12</option>
+      <option value="F13">F13</option>
+      <option value="F14">F14</option>
+      <option value="F15">F15</option>
+      <option value="F16">F16</option>
+      <option value="F17">F17</option>
+      <option value="F19">F19</option>
+      <option value="F20">F20</option>
+    </select>
+    <!-- Display total question count -->
+    <p id="questionCount">Total Questions: 0</p>
+    <div class="form-group">
+      <label for="questionInput">Enter Question:</label>
+      <input type="text" id="questionInput" placeholder="Enter Question">
+      <div class="option-container">
+        <label for="optionA">A:</label>
+        <input type="text" id="optionA" placeholder="Option A">
+      </div>
+      <div class="option-container">
+        <label for="optionB">B:</label>
+        <input type="text" id="optionB" placeholder="Option B">
+      </div>
+      <div class="option-container">
+        <label for="optionC">C:</label>
+        <input type="text" id="optionC" placeholder="Option C">
+      </div>
+      <div class="option-container">
+        <label for="optionD">D:</label>
+        <input type="text" id="optionD" placeholder="Option D">
+      </div>
+      <select id="correctOption">
+        <option value="">Select Correct Option</option>
+        <option value="A">A</option>
+        <option value="B">B</option>
+        <option value="C">C</option>
+        <option value="D">D</option>
+      </select>
+    </div>
+    <button onclick="addQuestion()">Add Question</button>
+    <ul id="questionList"></ul>
+  </div>
+
+  <script>
+    // Initialize Firebase with your configuration snippet
+    var firebaseConfig = {
+      apiKey: "AIzaSyAiMobrzS_1LRkEp5PRpcppN0oVag7V9Kk",
+      authDomain: "lipreviewermanagement.firebaseapp.com",
+      projectId: "lipreviewermanagement",
+      storageBucket: "lipreviewermanagement.firebasestorage.app",
+      messagingSenderId: "273852069277",
+      appId: "1:273852069277:web:cdb76befc9c096e9e0ab74"
+    };
+    firebase.initializeApp(firebaseConfig);
+    var db = firebase.firestore();
+
+    // --- Review Tab Functionality ---
+    let currentSubject = '';
+    let currentQuestion = null;
+    let currentCorrectAnswer = '';
+    let score = 0;
+    let quizQuestions = []; // Array to hold questions for this quiz session
+    let totalQuestions = 0;
+
+    function startQuiz() {
+      currentSubject = document.getElementById('subjectSelect').value;
+      score = 0;
+      document.getElementById('score').innerText = 'Score: 0 / 0';
+      // Fetch questions for the selected subject from Firestore
+      db.collection("questions").where("subject", "==", currentSubject).get()
+      .then((querySnapshot) => {
+        quizQuestions = [];
+        querySnapshot.forEach((doc) => {
+          quizQuestions.push(doc.data());
+        });
+        totalQuestions = quizQuestions.length;
+        document.getElementById('score').innerText = 'Score: 0 / ' + totalQuestions;
+        showNextQuestion();
+      })
+      .catch((error) => {
+        console.error("Error fetching questions: ", error);
+      });
+    }
+
+    function showNextQuestion() {
+      const quizContainer = document.getElementById('quizContainer');
+      document.getElementById('nextButtonContainer').innerHTML = '';
+      if (!currentSubject || quizQuestions.length === 0) {
+        quizContainer.innerHTML = `<p>Quiz finished! Score: ${score} / ${totalQuestions}</p>`;
+        return;
+      }
+      const randomIndex = Math.floor(Math.random() * quizQuestions.length);
+      currentQuestion = quizQuestions.splice(randomIndex, 1)[0];
+      currentCorrectAnswer = currentQuestion["option" + currentQuestion.correctOption].trim();
+      let choices = [
+        currentQuestion.optionA.trim(),
+        currentQuestion.optionB.trim(),
+        currentQuestion.optionC.trim(),
+        currentQuestion.optionD.trim()
+      ];
+      shuffle(choices);
+      let html = `<p>${currentQuestion.question}</p>`;
+      choices.forEach((choiceText, index) => {
+        let newLetter = String.fromCharCode(65 + index);
+        html += `<button data-option-text="${choiceText}" id="optionButton${newLetter}" onclick="checkAnswer('${choiceText}')">${newLetter}: ${choiceText}</button><br>`;
+      });
+      quizContainer.innerHTML = html;
+    }
+
+    function checkAnswer(selectedText) {
+      const buttons = document.querySelectorAll('#quizContainer button');
+      buttons.forEach(btn => btn.disabled = true);
+      if (selectedText.trim() === currentCorrectAnswer) {
+        buttons.forEach(btn => {
+          if (btn.getAttribute('data-option-text').trim() === selectedText.trim())
+            btn.classList.add('correct');
+        });
+        score++;
+      } else {
+        buttons.forEach(btn => {
+          if (btn.getAttribute('data-option-text').trim() === selectedText.trim())
+            btn.classList.add('wrong
