@@ -156,7 +156,8 @@
       <option value="F20">F20</option>
     </select>
     <div id="quizContainer"></div>
-    <p id="score">Score: 0</p>
+    <!-- Score display now shows "Score: X / Y" -->
+    <p id="score">Score: 0 / 0</p>
     <div id="controlButtons">
       <div id="nextButtonContainer"></div>
       <button onclick="resetQuiz()">Reset Quiz</button>
@@ -187,30 +188,27 @@
       <option value="F19">F19</option>
       <option value="F20">F20</option>
     </select>
+    <!-- Display total question count -->
+    <p id="questionCount">Total Questions: 0</p>
     <div class="form-group">
       <label for="questionInput">Enter Question:</label>
       <input type="text" id="questionInput" placeholder="Enter Question">
-      
       <div class="option-container">
         <label for="optionA">A:</label>
         <input type="text" id="optionA" placeholder="Option A">
       </div>
-      
       <div class="option-container">
         <label for="optionB">B:</label>
         <input type="text" id="optionB" placeholder="Option B">
       </div>
-      
       <div class="option-container">
         <label for="optionC">C:</label>
         <input type="text" id="optionC" placeholder="Option C">
       </div>
-      
       <div class="option-container">
         <label for="optionD">D:</label>
         <input type="text" id="optionD" placeholder="Option D">
       </div>
-      
       <select id="correctOption">
         <option value="">Select Correct Option</option>
         <option value="A">A</option>
@@ -224,7 +222,7 @@
   </div>
 
   <script>
-    // Initialize Firebase with your configuration
+    // Initialize Firebase with your configuration snippet
     var firebaseConfig = {
       apiKey: "AIzaSyAiMobrzS_1LRkEp5PRpcppN0oVag7V9Kk",
       authDomain: "lipreviewermanagement.firebaseapp.com",
@@ -247,7 +245,7 @@
     function startQuiz() {
       currentSubject = document.getElementById('subjectSelect').value;
       score = 0;
-      document.getElementById('score').innerText = 'Score: ' + score;
+      document.getElementById('score').innerText = 'Score: 0 / 0';
       // Fetch questions for the selected subject from Firestore
       db.collection("questions").where("subject", "==", currentSubject).get()
       .then((querySnapshot) => {
@@ -256,6 +254,7 @@
           quizQuestions.push(doc.data());
         });
         totalQuestions = quizQuestions.length;
+        document.getElementById('score').innerText = 'Score: 0 / ' + totalQuestions;
         showNextQuestion();
       })
       .catch((error) => {
@@ -265,7 +264,6 @@
 
     function showNextQuestion() {
       const quizContainer = document.getElementById('quizContainer');
-      // Clear any existing Next button
       document.getElementById('nextButtonContainer').innerHTML = '';
       if (!currentSubject || quizQuestions.length === 0) {
         quizContainer.innerHTML = `<p>Quiz finished! Score: ${score} / ${totalQuestions}</p>`;
@@ -274,7 +272,6 @@
       const randomIndex = Math.floor(Math.random() * quizQuestions.length);
       currentQuestion = quizQuestions.splice(randomIndex, 1)[0];
       currentCorrectAnswer = currentQuestion["option" + currentQuestion.correctOption].trim();
-
       let choices = [
         currentQuestion.optionA.trim(),
         currentQuestion.optionB.trim(),
@@ -284,7 +281,7 @@
       shuffle(choices);
       let html = `<p>${currentQuestion.question}</p>`;
       choices.forEach((choiceText, index) => {
-        let newLetter = String.fromCharCode(65 + index); // A, B, C, D
+        let newLetter = String.fromCharCode(65 + index);
         html += `<button data-option-text="${choiceText}" id="optionButton${newLetter}" onclick="checkAnswer('${choiceText}')">${newLetter}: ${choiceText}</button><br>`;
       });
       quizContainer.innerHTML = html;
@@ -302,130 +299,4 @@
       } else {
         buttons.forEach(btn => {
           if (btn.getAttribute('data-option-text').trim() === selectedText.trim())
-            btn.classList.add('wrong');
-          if (btn.getAttribute('data-option-text').trim() === currentCorrectAnswer)
-            btn.classList.add('correct');
-        });
-      }
-      document.getElementById('score').innerText = 'Score: ' + score;
-      // Create and insert the "Next" button in its container (above Reset Quiz)
-      let nextButton = document.createElement('button');
-      nextButton.innerText = "Next";
-      nextButton.id = "nextBtn";
-      nextButton.classList.add("next-btn");
-      nextButton.onclick = function() {
-        nextButton.remove();
-        showNextQuestion();
-      };
-      document.getElementById('nextButtonContainer').appendChild(nextButton);
-    }
-
-    function resetQuiz() {
-      score = 0;
-      document.getElementById('score').innerText = 'Score: 0';
-      startQuiz();
-    }
-
-    // --- Manage Tab Functionality ---
-    function loadQuestions() {
-      const selectedSubject = document.getElementById('manageSubjectSelect').value;
-      const questionList = document.getElementById('questionList');
-      questionList.innerHTML = '';
-      if (selectedSubject) {
-        db.collection("questions").where("subject", "==", selectedSubject).get()
-        .then((querySnapshot) => {
-          querySnapshot.forEach((doc) => {
-            let q = doc.data();
-            const li = document.createElement('li');
-            li.innerHTML = `
-              <strong>Q:</strong> ${q.question}
-              <ul style="list-style: none; padding: 0; margin: 5px 0;">
-                <li>A: ${q.optionA}</li>
-                <li>B: ${q.optionB}</li>
-                <li>C: ${q.optionC}</li>
-                <li>D: ${q.optionD}</li>
-                <li>Correct Answer: ${q.correctOption}</li>
-              </ul>
-              <button onclick="deleteQuestion('${doc.id}')">Delete</button>
-            `;
-            questionList.appendChild(li);
-          });
-        })
-        .catch((error) => {
-          console.error("Error loading questions: ", error);
-        });
-      }
-    }
-
-    function addQuestion() {
-      const subject = document.getElementById('manageSubjectSelect').value;
-      const question = document.getElementById('questionInput').value;
-      const optionA = document.getElementById('optionA').value;
-      const optionB = document.getElementById('optionB').value;
-      const optionC = document.getElementById('optionC').value;
-      const optionD = document.getElementById('optionD').value;
-      const correctOption = document.getElementById('correctOption').value;
-      if (subject && question && optionA && optionB && optionC && optionD && correctOption) {
-        db.collection("questions").add({
-          subject: subject,
-          question: question,
-          optionA: optionA,
-          optionB: optionB,
-          optionC: optionC,
-          optionD: optionD,
-          correctOption: correctOption
-        })
-        .then(function(docRef) {
-          console.log("Question added with ID: ", docRef.id);
-          clearInputs();
-          loadQuestions();
-        })
-        .catch(function(error) {
-          console.error("Error adding question: ", error);
-        });
-      }
-    }
-
-    function deleteQuestion(docId) {
-      db.collection("questions").doc(docId).delete()
-      .then(function() {
-        console.log("Question successfully deleted!");
-        loadQuestions();
-      })
-      .catch(function(error) {
-        console.error("Error removing question: ", error);
-      });
-    }
-
-    function clearInputs() {
-      document.getElementById('questionInput').value = '';
-      document.getElementById('optionA').value = '';
-      document.getElementById('optionB').value = '';
-      document.getElementById('optionC').value = '';
-      document.getElementById('optionD').value = '';
-      document.getElementById('correctOption').value = '';
-    }
-
-    // Fisher-Yates shuffle algorithm
-    function shuffle(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-    }
-
-    function openTab(tabName) {
-      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-      document.getElementById(tabName).classList.add('active');
-      if (tabName === 'review') {
-        const subject = document.getElementById('subjectSelect').value;
-        if (subject) {
-          startQuiz();
-        } else {
-          document.getElementById('quizContainer').innerHTML = '';
-        }
-      }
-    }
-  </script>
-</body>
-</html>
+            btn.classList.add('wrong
