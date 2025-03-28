@@ -1,7 +1,0 @@
-apiKey: "AIzaSyAiMobrzS_1LRkEp5PRpcppN0oVag7V9Kk",
-  authDomain: "lipreviewermanagement.firebaseapp.com",
-  projectId: "lipreviewermanagement",
-  storageBucket: "lipreviewermanagement.firebasestorage.app",
-  messagingSenderId: "273852069277",
-  appId: "1:273852069277:web:cdb76befc9c096e9e0ab74"
-};
