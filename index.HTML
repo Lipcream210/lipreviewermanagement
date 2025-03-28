@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quiz Reviewer</title>
+  <!-- Firebase SDKs (compat versions) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
   <style>
     @font-face {
       font-family: "Maersk Sans";
@@ -223,48 +224,48 @@
   </div>
 
   <script>
-    // Subjects object with empty arrays for each subject.
-    let subjects = {
-      F1: [],
-      F2: [],
-      F3: [],
-      F4: [],
-      F5: [],
-      F6: [],
-      F8: [],
-      F9: [],
-      F10: [],
-      F11: [],
-      F12: [],
-      F13: [],
-      F14: [],
-      F15: [],
-      F16: [],
-      F17: [],
-      F19: [],
-      F20: []
+    // Initialize Firebase with your configuration
+    var firebaseConfig = {
+      apiKey: "AIzaSyAiMobrzS_1LRkEp5PRpcppN0oVag7V9Kk",
+      authDomain: "lipreviewermanagement.firebaseapp.com",
+      projectId: "lipreviewermanagement",
+      storageBucket: "lipreviewermanagement.firebasestorage.app",
+      messagingSenderId: "273852069277",
+      appId: "1:273852069277:web:cdb76befc9c096e9e0ab74"
     };
+    firebase.initializeApp(firebaseConfig);
+    var db = firebase.firestore();
 
     // --- Review Tab Functionality ---
     let currentSubject = '';
     let currentQuestion = null;
     let currentCorrectAnswer = '';
     let score = 0;
-    let quizQuestions = []; // Copy of questions for this quiz session
+    let quizQuestions = []; // Array to hold questions for this quiz session
     let totalQuestions = 0;
 
     function startQuiz() {
       currentSubject = document.getElementById('subjectSelect').value;
       score = 0;
-      quizQuestions = subjects[currentSubject] ? subjects[currentSubject].slice() : [];
-      totalQuestions = quizQuestions.length;
       document.getElementById('score').innerText = 'Score: ' + score;
-      showNextQuestion();
+      // Fetch questions for the selected subject from Firestore
+      db.collection("questions").where("subject", "==", currentSubject).get()
+      .then((querySnapshot) => {
+        quizQuestions = [];
+        querySnapshot.forEach((doc) => {
+          quizQuestions.push(doc.data());
+        });
+        totalQuestions = quizQuestions.length;
+        showNextQuestion();
+      })
+      .catch((error) => {
+        console.error("Error fetching questions: ", error);
+      });
     }
 
     function showNextQuestion() {
       const quizContainer = document.getElementById('quizContainer');
-      // Remove any existing Next button
+      // Clear any existing Next button
       document.getElementById('nextButtonContainer').innerHTML = '';
       if (!currentSubject || quizQuestions.length === 0) {
         quizContainer.innerHTML = `<p>Quiz finished! Score: ${score} / ${totalQuestions}</p>`;
@@ -272,7 +273,6 @@
       }
       const randomIndex = Math.floor(Math.random() * quizQuestions.length);
       currentQuestion = quizQuestions.splice(randomIndex, 1)[0];
-
       currentCorrectAnswer = currentQuestion["option" + currentQuestion.correctOption].trim();
 
       let choices = [
@@ -282,7 +282,6 @@
         currentQuestion.optionD.trim()
       ];
       shuffle(choices);
-
       let html = `<p>${currentQuestion.question}</p>`;
       choices.forEach((choiceText, index) => {
         let newLetter = String.fromCharCode(65 + index); // A, B, C, D
@@ -309,8 +308,7 @@
         });
       }
       document.getElementById('score').innerText = 'Score: ' + score;
-      
-      // Create and insert the "Next" button above the Reset Quiz button
+      // Create and insert the "Next" button in its container (above Reset Quiz)
       let nextButton = document.createElement('button');
       nextButton.innerText = "Next";
       nextButton.id = "nextBtn";
@@ -325,9 +323,7 @@
     function resetQuiz() {
       score = 0;
       document.getElementById('score').innerText = 'Score: 0';
-      quizQuestions = subjects[currentSubject] ? subjects[currentSubject].slice() : [];
-      totalQuestions = quizQuestions.length;
-      showNextQuestion();
+      startQuiz();
     }
 
     // --- Manage Tab Functionality ---
@@ -336,21 +332,27 @@
       const questionList = document.getElementById('questionList');
       questionList.innerHTML = '';
       if (selectedSubject) {
-        const questions = subjects[selectedSubject];
-        questions.forEach((question, index) => {
-          const li = document.createElement('li');
-          li.innerHTML = `
-            <strong>Q${index + 1}:</strong> ${question.question}
-            <ul style="list-style: none; padding: 0; margin: 5px 0;">
-              <li>A: ${question.optionA}</li>
-              <li>B: ${question.optionB}</li>
-              <li>C: ${question.optionC}</li>
-              <li>D: ${question.optionD}</li>
-              <li>Correct Answer: ${question.correctOption}</li>
-            </ul>
-            <button onclick="deleteQuestion('${selectedSubject}', ${index})">Delete</button>
-          `;
-          questionList.appendChild(li);
+        db.collection("questions").where("subject", "==", selectedSubject).get()
+        .then((querySnapshot) => {
+          querySnapshot.forEach((doc) => {
+            let q = doc.data();
+            const li = document.createElement('li');
+            li.innerHTML = `
+              <strong>Q:</strong> ${q.question}
+              <ul style="list-style: none; padding: 0; margin: 5px 0;">
+                <li>A: ${q.optionA}</li>
+                <li>B: ${q.optionB}</li>
+                <li>C: ${q.optionC}</li>
+                <li>D: ${q.optionD}</li>
+                <li>Correct Answer: ${q.correctOption}</li>
+              </ul>
+              <button onclick="deleteQuestion('${doc.id}')">Delete</button>
+            `;
+            questionList.appendChild(li);
+          });
+        })
+        .catch((error) => {
+          console.error("Error loading questions: ", error);
         });
       }
     }
@@ -364,15 +366,35 @@
       const optionD = document.getElementById('optionD').value;
       const correctOption = document.getElementById('correctOption').value;
       if (subject && question && optionA && optionB && optionC && optionD && correctOption) {
-        subjects[subject].push({ question, optionA, optionB, optionC, optionD, correctOption });
-        clearInputs();
-        loadQuestions();
+        db.collection("questions").add({
+          subject: subject,
+          question: question,
+          optionA: optionA,
+          optionB: optionB,
+          optionC: optionC,
+          optionD: optionD,
+          correctOption: correctOption
+        })
+        .then(function(docRef) {
+          console.log("Question added with ID: ", docRef.id);
+          clearInputs();
+          loadQuestions();
+        })
+        .catch(function(error) {
+          console.error("Error adding question: ", error);
+        });
       }
     }
 
-    function deleteQuestion(subject, index) {
-      subjects[subject].splice(index, 1);
-      loadQuestions();
+    function deleteQuestion(docId) {
+      db.collection("questions").doc(docId).delete()
+      .then(function() {
+        console.log("Question successfully deleted!");
+        loadQuestions();
+      })
+      .catch(function(error) {
+        console.error("Error removing question: ", error);
+      });
     }
 
     function clearInputs() {
