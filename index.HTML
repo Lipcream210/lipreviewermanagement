@@ -48,7 +48,7 @@
       border-radius: 5px;
       margin-bottom: 10px;
     }
-    /* Override hover for correct and wrong buttons so they keep their color */
+    /* Correct answer styling remains dark green */
     .correct, .correct:hover {
       background-color: #2e7d32;
       color: white;
@@ -163,8 +163,8 @@
       <option value="F20">F20</option>
     </select>
     <div id="quizContainer"></div>
-    <!-- Score now displays as "Score: X / Y" -->
-    <p id="score">Score: 0 / 0</p>
+    <!-- Display as "X / Y" (number answered / total) -->
+    <p id="score">0 / 0</p>
     <div id="controlButtons">
       <div id="nextButtonContainer"></div>
       <button onclick="resetQuiz()">Reset Quiz</button>
@@ -195,6 +195,8 @@
       <option value="F19">F19</option>
       <option value="F20">F20</option>
     </select>
+    <!-- Total questions count is displayed above the question list -->
+    <p id="questionCount"></p>
     <div class="form-group">
       <label for="questionInput">Enter Question:</label>
       <input type="text" id="questionInput" placeholder="Enter Question">
@@ -250,7 +252,7 @@
     function startQuiz() {
       currentSubject = document.getElementById('subjectSelect').value;
       score = 0;
-      document.getElementById('score').innerText = 'Score: 0 / 0';
+      document.getElementById('score').innerText = '0 / 0';
       // Fetch questions for the selected subject from Firestore
       db.collection("questions").where("subject", "==", currentSubject).get()
       .then((querySnapshot) => {
@@ -259,7 +261,7 @@
           quizQuestions.push(doc.data());
         });
         totalQuestions = quizQuestions.length;
-        document.getElementById('score').innerText = 'Score: 0 / ' + totalQuestions;
+        document.getElementById('score').innerText = '0 / ' + totalQuestions;
         showNextQuestion();
       })
       .catch((error) => {
@@ -272,7 +274,7 @@
       // Clear any existing Next button
       document.getElementById('nextButtonContainer').innerHTML = '';
       if (!currentSubject || quizQuestions.length === 0) {
-        quizContainer.innerHTML = `<p>Quiz finished! Score: ${score} / ${totalQuestions}</p>`;
+        quizContainer.innerHTML = `<p>Quiz finished! ${score} / ${totalQuestions}</p>`;
         return;
       }
       const randomIndex = Math.floor(Math.random() * quizQuestions.length);
@@ -310,9 +312,7 @@
             btn.classList.add('correct');
         });
       }
-      document.getElementById('score').innerText = 'Score: ' + score + ' / ' + totalQuestions;
-      
-      // Create and insert the "Next" button in its container (above Reset Quiz)
+      document.getElementById('score').innerText = score + ' / ' + totalQuestions;
       let nextButton = document.createElement('button');
       nextButton.innerText = "Next";
       nextButton.id = "nextBtn";
@@ -326,7 +326,7 @@
 
     function resetQuiz() {
       score = 0;
-      document.getElementById('score').innerText = 'Score: 0 / ' + totalQuestions;
+      document.getElementById('score').innerText = '0 / ' + totalQuestions;
       startQuiz();
     }
 
@@ -338,11 +338,13 @@
       if (selectedSubject) {
         db.collection("questions").where("subject", "==", selectedSubject).get()
         .then((querySnapshot) => {
+          let count = 0;
           querySnapshot.forEach((doc) => {
+            count++;
             let q = doc.data();
             const li = document.createElement('li');
             li.innerHTML = `
-              <strong>Q:</strong> ${q.question}
+              <strong>Q${count}:</strong> ${q.question}
               <ul style="list-style: none; padding: 0; margin: 5px 0;">
                 <li>A: ${q.optionA}</li>
                 <li>B: ${q.optionB}</li>
@@ -354,6 +356,7 @@
             `;
             questionList.appendChild(li);
           });
+          document.getElementById('questionCount').innerText = "Total Questions: " + count;
         })
         .catch((error) => {
           console.error("Error loading questions: ", error);
@@ -431,5 +434,7 @@
       }
     }
   </script>
+  <!-- Element to show total question count in Manage tab -->
+  <p id="questionCount"></p>
 </body>
 </html>
