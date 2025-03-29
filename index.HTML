@@ -48,6 +48,15 @@
       border-radius: 5px;
       margin-bottom: 10px;
     }
+    /* Override hover for correct and wrong buttons so they keep their color */
+    .correct, .correct:hover {
+      background-color: #2e7d32;
+      color: white;
+    }
+    .wrong, .wrong:hover {
+      background-color: #E53935;
+      color: white;
+    }
     .tab { 
       display: none; 
       padding: 20px; 
@@ -58,8 +67,6 @@
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     }
     .active { display: block; }
-    .correct { background-color: #4CAF50; color: white; }
-    .wrong { background-color: #E53935; color: white; }
     h2 { border-bottom: 2px solid #444; padding-bottom: 10px; }
     #quizContainer button { 
       display: block; 
@@ -156,7 +163,7 @@
       <option value="F20">F20</option>
     </select>
     <div id="quizContainer"></div>
-    <!-- Score now displays Score: X / Y -->
+    <!-- Score now displays as "Score: X / Y" -->
     <p id="score">Score: 0 / 0</p>
     <div id="controlButtons">
       <div id="nextButtonContainer"></div>
@@ -188,8 +195,6 @@
       <option value="F19">F19</option>
       <option value="F20">F20</option>
     </select>
-    <!-- Display total question count -->
-    <p id="questionCount">Total Questions: 0</p>
     <div class="form-group">
       <label for="questionInput">Enter Question:</label>
       <input type="text" id="questionInput" placeholder="Enter Question">
@@ -282,7 +287,7 @@
       shuffle(choices);
       let html = `<p>${currentQuestion.question}</p>`;
       choices.forEach((choiceText, index) => {
-        let newLetter = String.fromCharCode(65 + index);
+        let newLetter = String.fromCharCode(65 + index); // A, B, C, D
         html += `<button data-option-text="${choiceText}" id="optionButton${newLetter}" onclick="checkAnswer('${choiceText}')">${newLetter}: ${choiceText}</button><br>`;
       });
       quizContainer.innerHTML = html;
@@ -306,6 +311,7 @@
         });
       }
       document.getElementById('score').innerText = 'Score: ' + score + ' / ' + totalQuestions;
+      
       // Create and insert the "Next" button in its container (above Reset Quiz)
       let nextButton = document.createElement('button');
       nextButton.innerText = "Next";
@@ -332,8 +338,6 @@
       if (selectedSubject) {
         db.collection("questions").where("subject", "==", selectedSubject).get()
         .then((querySnapshot) => {
-          // Update total question count in Manage tab
-          document.getElementById('questionCount').innerText = "Total Questions: " + querySnapshot.size;
           querySnapshot.forEach((doc) => {
             let q = doc.data();
             const li = document.createElement('li');
@@ -427,7 +431,5 @@
       }
     }
   </script>
-  <!-- Element to show total question count in Manage tab -->
-  <p id="questionCount">Total Questions: 0</p>
 </body>
 </html>
