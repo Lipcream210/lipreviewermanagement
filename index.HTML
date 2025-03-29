@@ -48,7 +48,7 @@
       border-radius: 5px;
       margin-bottom: 10px;
     }
-    /* Correct answer styling remains dark green */
+    /* Correct and Wrong answer styling that stays on hover */
     .correct, .correct:hover {
       background-color: #2e7d32;
       color: white;
@@ -163,7 +163,7 @@
       <option value="F20">F20</option>
     </select>
     <div id="quizContainer"></div>
-    <!-- Display as "X / Y" (number answered / total) -->
+    <!-- Score is now shown as "X / Y" -->
     <p id="score">0 / 0</p>
     <div id="controlButtons">
       <div id="nextButtonContainer"></div>
@@ -195,8 +195,7 @@
       <option value="F19">F19</option>
       <option value="F20">F20</option>
     </select>
-    <!-- Total questions count is displayed above the question list -->
-    <p id="questionCount"></p>
+    <!-- Removed any duplicate Total Questions display -->
     <div class="form-group">
       <label for="questionInput">Enter Question:</label>
       <input type="text" id="questionInput" placeholder="Enter Question">
@@ -226,6 +225,8 @@
     </div>
     <button onclick="addQuestion()">Add Question</button>
     <ul id="questionList"></ul>
+    <!-- Display total number of questions for the current subject -->
+    <p id="questionCount"></p>
   </div>
 
   <script>
@@ -252,15 +253,18 @@
     function startQuiz() {
       currentSubject = document.getElementById('subjectSelect').value;
       score = 0;
+      console.log("Starting quiz for subject:", currentSubject);
       document.getElementById('score').innerText = '0 / 0';
       // Fetch questions for the selected subject from Firestore
       db.collection("questions").where("subject", "==", currentSubject).get()
       .then((querySnapshot) => {
         quizQuestions = [];
         querySnapshot.forEach((doc) => {
+          console.log("Loaded question:", doc.data().question);
           quizQuestions.push(doc.data());
         });
         totalQuestions = quizQuestions.length;
+        console.log("Total questions loaded:", totalQuestions);
         document.getElementById('score').innerText = '0 / ' + totalQuestions;
         showNextQuestion();
       })
@@ -273,12 +277,14 @@
       const quizContainer = document.getElementById('quizContainer');
       // Clear any existing Next button
       document.getElementById('nextButtonContainer').innerHTML = '';
+      console.log("Remaining questions count:", quizQuestions.length);
       if (!currentSubject || quizQuestions.length === 0) {
         quizContainer.innerHTML = `<p>Quiz finished! ${score} / ${totalQuestions}</p>`;
         return;
       }
       const randomIndex = Math.floor(Math.random() * quizQuestions.length);
       currentQuestion = quizQuestions.splice(randomIndex, 1)[0];
+      console.log("Current question:", currentQuestion.question);
       currentCorrectAnswer = currentQuestion["option" + currentQuestion.correctOption].trim();
       let choices = [
         currentQuestion.optionA.trim(),
@@ -289,7 +295,7 @@
       shuffle(choices);
       let html = `<p>${currentQuestion.question}</p>`;
       choices.forEach((choiceText, index) => {
-        let newLetter = String.fromCharCode(65 + index); // A, B, C, D
+        let newLetter = String.fromCharCode(65 + index);
         html += `<button data-option-text="${choiceText}" id="optionButton${newLetter}" onclick="checkAnswer('${choiceText}')">${newLetter}: ${choiceText}</button><br>`;
       });
       quizContainer.innerHTML = html;
@@ -298,12 +304,14 @@
     function checkAnswer(selectedText) {
       const buttons = document.querySelectorAll('#quizContainer button');
       buttons.forEach(btn => btn.disabled = true);
+      console.log("Selected answer:", selectedText, "Correct answer:", currentCorrectAnswer);
       if (selectedText.trim() === currentCorrectAnswer) {
         buttons.forEach(btn => {
           if (btn.getAttribute('data-option-text').trim() === selectedText.trim())
             btn.classList.add('correct');
         });
         score++;
+        console.log("Answer correct. Score is now:", score);
       } else {
         buttons.forEach(btn => {
           if (btn.getAttribute('data-option-text').trim() === selectedText.trim())
@@ -311,6 +319,7 @@
           if (btn.getAttribute('data-option-text').trim() === currentCorrectAnswer)
             btn.classList.add('correct');
         });
+        console.log("Answer wrong. Score remains:", score);
       }
       document.getElementById('score').innerText = score + ' / ' + totalQuestions;
       let nextButton = document.createElement('button');
