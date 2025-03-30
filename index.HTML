@@ -224,6 +224,7 @@
     </div>
     <button onclick="addQuestion()">Add Question</button>
     <ul id="questionList"></ul>
+    <!-- Display total number of questions for the current subject -->
     <p id="questionCount"></p>
   </div>
 
@@ -245,7 +246,7 @@
     let currentQuestion = null;
     let currentCorrectAnswer = '';
     let score = 0;
-    let answeredCount = 0; // New variable to track how many questions have been answered
+    let answeredCount = 0; // Track number of answered questions
     let quizQuestions = []; // Array to hold questions for this quiz session
     let totalQuestions = 0;
 
@@ -321,7 +322,7 @@
         });
         console.log("Answer wrong. Score remains:", score);
       }
-      answeredCount++; // Increment total questions answered
+      answeredCount++; // Increment the number of answered questions
       document.getElementById('score').innerText = "Score: " + score + " | Answered: " + answeredCount + " / " + totalQuestions;
       let nextButton = document.createElement('button');
       nextButton.innerText = "Next";
@@ -377,12 +378,21 @@
 
     function addQuestion() {
       const subject = document.getElementById('manageSubjectSelect').value;
-      const question = document.getElementById('questionInput').value;
-      const optionA = document.getElementById('optionA').value;
-      const optionB = document.getElementById('optionB').value;
-      const optionC = document.getElementById('optionC').value;
-      const optionD = document.getElementById('optionD').value;
+      let question = document.getElementById('questionInput').value;
+      let optionA = document.getElementById('optionA').value;
+      let optionB = document.getElementById('optionB').value;
+      let optionC = document.getElementById('optionC').value;
+      let optionD = document.getElementById('optionD').value;
       const correctOption = document.getElementById('correctOption').value;
+      
+      // Remove ° and ' characters from the strings
+      const pattern = /[°']/g;
+      question = question.replace(pattern, '');
+      optionA = optionA.replace(pattern, '');
+      optionB = optionB.replace(pattern, '');
+      optionC = optionC.replace(pattern, '');
+      optionD = optionD.replace(pattern, '');
+      
       if (subject && question && optionA && optionB && optionC && optionD && correctOption) {
         db.collection("questions").add({
           subject: subject,
