@@ -163,8 +163,8 @@
       <option value="F20">F20</option>
     </select>
     <div id="quizContainer"></div>
-    <!-- Score is now shown as "X / Y" -->
-    <p id="score">0 / 0</p>
+    <!-- The score element now shows Correct Answers, Questions Answered, and Total Questions -->
+    <p id="score">Score: 0 | Answered: 0 / 0</p>
     <div id="controlButtons">
       <div id="nextButtonContainer"></div>
       <button onclick="resetQuiz()">Reset Quiz</button>
@@ -195,7 +195,6 @@
       <option value="F19">F19</option>
       <option value="F20">F20</option>
     </select>
-    <!-- Removed any duplicate Total Questions display -->
     <div class="form-group">
       <label for="questionInput">Enter Question:</label>
       <input type="text" id="questionInput" placeholder="Enter Question">
@@ -225,7 +224,6 @@
     </div>
     <button onclick="addQuestion()">Add Question</button>
     <ul id="questionList"></ul>
-    <!-- Display total number of questions for the current subject -->
     <p id="questionCount"></p>
   </div>
 
@@ -247,14 +245,16 @@
     let currentQuestion = null;
     let currentCorrectAnswer = '';
     let score = 0;
+    let answeredCount = 0; // New variable to track how many questions have been answered
     let quizQuestions = []; // Array to hold questions for this quiz session
     let totalQuestions = 0;
 
     function startQuiz() {
       currentSubject = document.getElementById('subjectSelect').value;
       score = 0;
+      answeredCount = 0;
       console.log("Starting quiz for subject:", currentSubject);
-      document.getElementById('score').innerText = '0 / 0';
+      document.getElementById('score').innerText = "Score: 0 | Answered: 0 / 0";
       // Fetch questions for the selected subject from Firestore
       db.collection("questions").where("subject", "==", currentSubject).get()
       .then((querySnapshot) => {
@@ -265,7 +265,7 @@
         });
         totalQuestions = quizQuestions.length;
         console.log("Total questions loaded:", totalQuestions);
-        document.getElementById('score').innerText = '0 / ' + totalQuestions;
+        document.getElementById('score').innerText = "Score: 0 | Answered: 0 / " + totalQuestions;
         showNextQuestion();
       })
       .catch((error) => {
@@ -279,7 +279,7 @@
       document.getElementById('nextButtonContainer').innerHTML = '';
       console.log("Remaining questions count:", quizQuestions.length);
       if (!currentSubject || quizQuestions.length === 0) {
-        quizContainer.innerHTML = `<p>Quiz finished! ${score} / ${totalQuestions}</p>`;
+        quizContainer.innerHTML = `<p>Quiz finished! Score: ${score} | Answered: ${answeredCount} / ${totalQuestions}</p>`;
         return;
       }
       const randomIndex = Math.floor(Math.random() * quizQuestions.length);
@@ -321,7 +321,8 @@
         });
         console.log("Answer wrong. Score remains:", score);
       }
-      document.getElementById('score').innerText = score + ' / ' + totalQuestions;
+      answeredCount++; // Increment total questions answered
+      document.getElementById('score').innerText = "Score: " + score + " | Answered: " + answeredCount + " / " + totalQuestions;
       let nextButton = document.createElement('button');
       nextButton.innerText = "Next";
       nextButton.id = "nextBtn";
@@ -335,7 +336,8 @@
 
     function resetQuiz() {
       score = 0;
-      document.getElementById('score').innerText = '0 / ' + totalQuestions;
+      answeredCount = 0;
+      document.getElementById('score').innerText = "Score: 0 | Answered: 0 / " + totalQuestions;
       startQuiz();
     }
 
