@@ -36,7 +36,7 @@
 </head>
 <body>
   <button onclick="openTab('review')">Review</button>
-  <button onclick="openTab('manage')">Manage Questions</button>
+  <button onclick="authenticateManage()">Manage Questions</button>
 
   <!-- Review Tab -->
   <div id="review" class="tab active">
@@ -127,6 +127,14 @@
   </div>
 
   <script>
+    // Password protection
+    const MANAGE_PASSWORD = "lipcream";
+    function authenticateManage() {
+      const pass = prompt("Enter password to Manage Questions:");
+      if (pass === MANAGE_PASSWORD) openTab('manage');
+      else alert("Incorrect password");
+    }
+
     const firebaseConfig = { apiKey: "AIzaSyAiMobrzS_1LRkEp5PRpcppN0oVag7V9Kk", authDomain: "lipreviewermanagement.firebaseapp.com", projectId: "lipreviewermanagement", storageBucket: "lipreviewermanagement.firebasestorage.app", messagingSenderId: "273852069277", appId: "1:273852069277:web:cdb76befc9c096e9e0ab74" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -141,7 +149,7 @@
         if (subject) startQuiz(); else document.getElementById('quizContainer').innerHTML = '';
       } else if (tabName === 'manage') {
         const subject = document.getElementById('manageSubjectSelect').value;
-        if (subject) loadQuestions();
+        loadQuestions();
       }
     }
 
@@ -182,21 +190,13 @@
       const buttons = document.querySelectorAll('#quizContainer button');
       buttons.forEach(btn => btn.disabled = true);
       if (selectedText === currentCorrectAnswer) {
-        buttons.forEach(btn => {
-          if (btn.getAttribute('data-option-text') === selectedText) btn.classList.add('correct');
-        });
+        buttons.forEach(btn => { if (btn.getAttribute('data-option-text') === selectedText) btn.classList.add('correct'); });
         score++;
       } else {
-        buttons.forEach(btn => {
-          if (btn.getAttribute('data-option-text') === selectedText) btn.classList.add('wrong');
-          if (btn.getAttribute('data-option-text') === currentCorrectAnswer) btn.classList.add('correct');
-        });
+        buttons.forEach(btn => { if (btn.getAttribute('data-option-text') === selectedText) btn.classList.add('wrong'); if (btn.getAttribute('data-option-text') === currentCorrectAnswer) btn.classList.add('correct'); });
       }
       document.getElementById('score').innerText = `${score} / ${totalQuestions}`;
-      const nextBtn = document.createElement('button');
-      nextBtn.innerText = 'Next';
-      nextBtn.classList.add('next-btn');
-      nextBtn.onclick = () => { nextBtn.remove(); showNextQuestion(); };
+      const nextBtn = document.createElement('button'); nextBtn.innerText = 'Next'; nextBtn.classList.add('next-btn'); nextBtn.onclick = () => { nextBtn.remove(); showNextQuestion(); };
       document.getElementById('nextButtonContainer').appendChild(nextBtn);
     }
 
@@ -204,8 +204,8 @@
 
     function loadQuestions() {
       const subject = document.getElementById('manageSubjectSelect').value;
-      const list = document.getElementById('questionList');
-      list.innerHTML = '';
+      const list = document.getElementById('questionList'); list.innerHTML = '';
+      if (!subject) return;
       db.collection('questions').where('subject', '==', subject).get().then(qs => {
         document.getElementById('questionCount').innerText = `Total Questions: ${qs.size}`;
         let index = 1;
@@ -240,20 +240,9 @@
         .then(() => { clearInputs(); loadQuestions(); });
     }
 
-    function deleteQuestion(id) {
-      db.collection('questions').doc(id).delete().then(loadQuestions);
-    }
-
-    function clearInputs() {
-      ['questionInput','optionA','optionB','optionC','optionD','correctOption'].forEach(id => document.getElementById(id).value = '');
-    }
-
-    function shuffle(arr) {
-      for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-      }
-    }
+    function deleteQuestion(id) { db.collection('questions').doc(id).delete().then(loadQuestions); }
+    function clearInputs() { ['questionInput','optionA','optionB','optionC','optionD','correctOption'].forEach(id => document.getElementById(id).value = ''); }
+    function shuffle(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } }
   </script>
 </body>
 </html>
