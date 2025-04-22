@@ -8,21 +8,60 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
   <style>
-    /* Styles omitted for brevity (same as before) */
+    @font-face { font-family: "Maersk Sans"; src: local("Maersk Sans"), local("MaerskSans"); }
     body { font-family: 'Poppins', sans-serif; background-color: #181818; color: #E0E0E0; margin: 0; padding: 20px; text-align: center; }
-    .tab { display: none; }
+    .review-header { font-family: "Maersk Sans", sans-serif; font-size: 24px; margin-bottom: 10px; }
+    button, select, input { background-color: #292929; color: #E0E0E0; border: 1px solid #555; padding: 10px; margin: 5px; border-radius: 8px; cursor: pointer; transition: background 0.3s; }
+    button:hover { background-color: #444; }
+    .next-btn { font-size: 0.8em; padding: 8px 16px; background-color: #2196F3; color: #fff; border: none; border-radius: 5px; margin-bottom: 10px; }
+    .correct, .correct:hover { background-color: #2e7d32; color: white; }
+    .wrong, .wrong:hover { background-color: #E53935; color: white; }
+    .tab { display: none; padding: 20px; border-radius: 10px; background-color: #222; max-width: 600px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
     .active { display: block; }
-    /* ...rest unchanged... */
+    h2 { border-bottom: 2px solid #444; padding-bottom: 10px; }
+    #quizContainer button { display: block; width: 100%; text-align: left; margin: 5px 0; }
+    #controlButtons { margin-top: 10px; }
+    #nextButtonContainer { margin-bottom: 10px; }
+    ul { list-style-type: none; padding: 0; }
+    li { background-color: #292929; padding: 10px; margin: 5px 0; border-radius: 5px; display: flex; flex-direction: column; align-items: flex-start; transition: background 0.3s; }
+    li:hover { background-color: #333; }
+    li > button { align-self: flex-end; background-color: #ff5252; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; transition: background 0.3s; }
+    li > button:hover { background-color: #ff1744; }
+    .form-group { display: flex; flex-direction: column; align-items: center; }
+    .form-group input, .form-group select { width: 80%; margin-bottom: 10px; padding: 10px; border-radius: 8px; border: 1px solid #555; background-color: #292929; color: #E0E0E0; }
+    #questionInput { background-color: #3a3a3a; font-weight: bold; }
+    .option-container { display: flex; justify-content: flex-start; margin-bottom: 10px; width: 80%; }
+    .option-container label { margin-right: 10px; font-weight: bold; width: 30px; text-align: left; }
   </style>
 </head>
 <body>
   <button onclick="openTab('review')">Review</button>
   <button onclick="openTab('manage')">Manage Questions</button>
 
+  <!-- Review Tab -->
   <div id="review" class="tab active">
-    <!-- Review markup unchanged -->
     <h2 class="review-header">DECK MANAGEMENT LEVEL REVIEW</h2>
-    <select id="subjectSelect" onchange="startQuiz()"> <!-- options... --> </select>
+    <select id="subjectSelect" onchange="startQuiz()">
+      <option value="">Select a Subject</option>
+      <option value="F1">F1</option>
+      <option value="F2">F2</option>
+      <option value="F3">F3</option>
+      <option value="F4">F4</option>
+      <option value="F5">F5</option>
+      <option value="F6">F6</option>
+      <option value="F8">F8</option>
+      <option value="F9">F9</option>
+      <option value="F10">F10</option>
+      <option value="F11">F11</option>
+      <option value="F12">F12</option>
+      <option value="F13">F13</option>
+      <option value="F14">F14</option>
+      <option value="F15">F15</option>
+      <option value="F16">F16</option>
+      <option value="F17">F17</option>
+      <option value="F19">F19</option>
+      <option value="F20">F20</option>
+    </select>
     <div id="quizContainer"></div>
     <p id="score">0 / 0</p>
     <div id="controlButtons">
@@ -31,21 +70,64 @@
     </div>
   </div>
 
+  <!-- Manage Questions Tab -->
   <div id="manage" class="tab">
-    <!-- Manage markup unchanged -->
     <h2>Manage Questions</h2>
-    <select id="manageSubjectSelect" onchange="loadQuestions()"> <!-- options... --> </select>
+    <select id="manageSubjectSelect" onchange="loadQuestions()">
+      <option value="">Select a Subject</option>
+      <option value="F1">F1</option>
+      <option value="F2">F2</option>
+      <option value="F3">F3</option>
+      <option value="F4">F4</option>
+      <option value="F5">F5</option>
+      <option value="F6">F6</option>
+      <option value="F8">F8</option>
+      <option value="F9">F9</option>
+      <option value="F10">F10</option>
+      <option value="F11">F11</option>
+      <option value="F12">F12</option>
+      <option value="F13">F13</option>
+      <option value="F14">F14</option>
+      <option value="F15">F15</option>
+      <option value="F16">F16</option>
+      <option value="F17">F17</option>
+      <option value="F19">F19</option>
+      <option value="F20">F20</option>
+    </select>
     <p id="questionCount"></p>
     <div class="form-group">
-      <!-- input fields... -->
+      <label for="questionInput">Enter Question:</label>
+      <input type="text" id="questionInput" placeholder="Enter Question">
+      <div class="option-container">
+        <label for="optionA">A:</label>
+        <input type="text" id="optionA" placeholder="Option A">
+      </div>
+      <div class="option-container">
+        <label for="optionB">B:</label>
+        <input type="text" id="optionB" placeholder="Option B">
+      </div>
+      <div class="option-container">
+        <label for="optionC">C:</label>
+        <input type="text" id="optionC" placeholder="Option C">
+      </div>
+      <div class="option-container">
+        <label for="optionD">D:</label>
+        <input type="text" id="optionD" placeholder="Option D">
+      </div>
+      <select id="correctOption">
+        <option value="">Select Correct Option</option>
+        <option value="A">A</option>
+        <option value="B">B</option>
+        <option value="C">C</option>
+        <option value="D">D</option>
+      </select>
     </div>
     <button onclick="addQuestion()">Add Question</button>
     <ul id="questionList"></ul>
   </div>
 
   <script>
-    console.log('Initializing Quiz Reviewer...');
-    // Password
+    // Password for Manage tab
     const MANAGE_PASSWORD = 'lipcream';
 
     function openTab(tabName) {
@@ -56,139 +138,118 @@
           return;
         }
       }
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
       document.getElementById(tabName).classList.add('active');
+
       if (tabName === 'review') {
-        const sub = document.getElementById('subjectSelect').value;
-        if (sub) startQuiz();
+        const subject = document.getElementById('subjectSelect').value;
+        if (subject) startQuiz();
+        else document.getElementById('quizContainer').innerHTML = '';
       } else if (tabName === 'manage') {
-        // Preselect last reviewed
+        // Preselect same subject from review tab
         const last = document.getElementById('subjectSelect').value;
         if (last) document.getElementById('manageSubjectSelect').value = last;
         loadQuestions();
       }
     }
 
-    // Initialize Firebase
-    var firebaseConfig = {
-      apiKey: 'AIzaSyAiMobrzS_1LRkEp5PRpcppN0oVag7V9Kk',
-      authDomain: 'lipreviewermanagement.firebaseapp.com',
-      projectId: 'lipreviewermanagement',
-      storageBucket: 'lipreviewermanagement.firebasestorage.app',
-      messagingSenderId: '273852069277',
-      appId: '1:273852069277:web:cdb76befc9c096e9e0ab74'
-    };
+    // Firebase init
+    var firebaseConfig = { apiKey: 'AIzaSyAiMobrzS_1LRkEp5PRpcppN0oVag7V9Kk', authDomain: 'lipreviewermanagement.firebaseapp.com', projectId: 'lipreviewermanagement', storageBucket: 'lipreviewermanagement.firebasestorage.app', messagingSenderId: '273852069277', appId: '1:273852069277:web:cdb76befc9c096e9e0ab74' };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // -- Review Logic --
+    // Review functions
     let currentSubject = '', quizQuestions = [], totalQuestions = 0, currentCorrectAnswer = '', score = 0;
 
     function startQuiz() {
-      const sub = document.getElementById('subjectSelect').value;
-      if (!sub) return;
-      currentSubject = sub;
+      currentSubject = document.getElementById('subjectSelect').value;
       score = 0;
       document.getElementById('score').innerText = '0 / 0';
-      db.collection('questions').where('subject','==',currentSubject).get()
-        .then(snapshot => {
-          quizQuestions = snapshot.docs.map(d => d.data());
-          totalQuestions = quizQuestions.length;
-          document.getElementById('score').innerText = '0 / ' + totalQuestions;
-          showNextQuestion();
-        })
-        .catch(error => {
-          console.error('Error fetching questions:', error);
-          document.getElementById('quizContainer').innerHTML = `<p style="color:red;">Error loading quiz: ${error.message}</p>`;
-        });
+      db.collection('questions').where('subject', '==', currentSubject).get().then(qs => {
+        quizQuestions = [];
+        qs.forEach(doc => quizQuestions.push(doc.data()));
+        totalQuestions = quizQuestions.length;
+        document.getElementById('score').innerText = '0 / ' + totalQuestions;
+        showNextQuestion();
+      });
     }
 
     function showNextQuestion() {
       const container = document.getElementById('quizContainer');
       document.getElementById('nextButtonContainer').innerHTML = '';
-      if (quizQuestions.length === 0) {
+      if (!currentSubject || quizQuestions.length === 0) {
         container.innerHTML = `<p>Quiz finished! ${score} / ${totalQuestions}</p>`;
         return;
       }
       const idx = Math.floor(Math.random() * quizQuestions.length);
-      const q = quizQuestions.splice(idx,1)[0];
-      currentCorrectAnswer = q['option'+q.correctOption].trim();
-      const choices = [q.optionA, q.optionB, q.optionC, q.optionD].map(c=>c.trim());
-      shuffle(choices);
+      const q = quizQuestions.splice(idx, 1)[0];
+      currentCorrectAnswer = q['option' + q.correctOption].trim();
+      let choices = [q.optionA, q.optionB, q.optionC, q.optionD].map(c => c.trim()); shuffle(choices);
       let html = `<p>${q.question}</p>`;
-      choices.forEach((c,i) => {
-        const L = String.fromCharCode(65+i);
-        html += `<button data="${c}" onclick="checkAnswer('${c}')">${L}: ${c}</button><br>`;
+      choices.forEach((c, i) => {
+        const letter = String.fromCharCode(65 + i);
+        html += `<button data-option-text="${c}" onclick="checkAnswer('${c}')">${letter}: ${c}</button><br>`;
       });
       container.innerHTML = html;
     }
 
     function checkAnswer(val) {
-      document.querySelectorAll('#quizContainer button').forEach(b=>b.disabled=true);
+      document.querySelectorAll('#quizContainer button').forEach(b => b.disabled = true);
       if (val === currentCorrectAnswer) {
-        document.querySelector(`#quizContainer button[data="${val}"]`).classList.add('correct'); score++; }
+        document.querySelector(`#quizContainer button[data-option-text="${val}"]`).classList.add('correct'); score++;}
       else {
-        document.querySelector(`#quizContainer button[data="${val}"]`).classList.add('wrong');
-        document.querySelector(`#quizContainer button[data="${currentCorrectAnswer}"]`).classList.add('correct');
+        document.querySelector(`#quizContainer button[data-option-text="${val}"]`).classList.add('wrong');
+        document.querySelector(`#quizContainer button[data-option-text="${currentCorrectAnswer}"]`).classList.add('correct');
       }
       document.getElementById('score').innerText = `${score} / ${totalQuestions}`;
-      const btn = document.createElement('button');
-      btn.innerText = 'Next'; btn.classList.add('next-btn');
-      btn.onclick = function() { btn.remove(); showNextQuestion(); };
-      document.getElementById('nextButtonContainer').appendChild(btn);
+      const nextBtn = document.createElement('button'); nextBtn.innerText = 'Next'; nextBtn.classList.add('next-btn');
+      nextBtn.onclick = () => { nextBtn.remove(); showNextQuestion(); };
+      document.getElementById('nextButtonContainer').appendChild(nextBtn);
     }
 
     function resetQuiz() { startQuiz(); }
 
-    // -- Manage Logic --
+    // Manage functions
     function loadQuestions() {
       const sub = document.getElementById('manageSubjectSelect').value;
-      const list = document.getElementById('questionList');
-      list.innerHTML = '';
+      const list = document.getElementById('questionList'); list.innerHTML = '';
       if (!sub) return;
-      db.collection('questions').where('subject','==',sub).get()
-        .then(snapshot => {
-          document.getElementById('questionCount').innerText = 'Total Questions: ' + snapshot.size;
-          let idx = 1;
-          snapshot.forEach(doc => {
-            const d = doc.data();
-            const li = document.createElement('li');
-            li.innerHTML = `
-              <strong>Q${idx++}:</strong> ${d.question}
-              <ul style="list-style:none;padding:0;margin:5px 0;">
-                <li>A: ${d.optionA}</li>
-                <li>B: ${d.optionB}</li>
-                <li>C: ${d.optionC}</li>
-                <li>D: ${d.optionD}</li>
-              </ul>
-              <button onclick="deleteQuestion('${doc.id}')">Delete</button>
-            `;
-            list.appendChild(li);
-          });
-        })
-        .catch(error => {
-          console.error('Error loading manage questions:', error);
-          list.innerHTML = `<li style="color:red;">Error: ${error.message}</li>`;
+      db.collection('questions').where('subject', '==', sub).get().then(qs => {
+        document.getElementById('questionCount').innerText = `Total Questions: ${qs.size}`;
+        let index = 1;
+        qs.forEach(doc => {
+          const d = doc.data();
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <strong>Q${index++}:</strong> ${d.question}
+            <ul style="list-style:none;padding:0;margin:5px 0;">
+              <li>A: ${d.optionA}</li>
+              <li>B: ${d.optionB}</li>
+              <li>C: ${d.optionC}</li>
+              <li>D: ${d.optionD}</li>
+            </ul>
+            <button onclick="deleteQuestion('${doc.id}')">Delete</button>
+          `;
+          list.appendChild(li);
         });
+      });
     }
 
     function addQuestion() {
-      const sub = document.getElementById('manageSubjectSelect').value;
-      if (!sub) return;
+      const sub = document.getElementById('manageSubjectSelect').value; if (!sub) return;
       const question = document.getElementById('questionInput').value;
       const optionA = document.getElementById('optionA').value;
       const optionB = document.getElementById('optionB').value;
       const optionC = document.getElementById('optionC').value;
       const optionD = document.getElementById('optionD').value;
       const correctOption = document.getElementById('correctOption').value;
-      db.collection('questions').add({subject:sub,question,optionA,optionB,optionC,optionD,correctOption})
-        .then(() => { clearInputs(); loadQuestions(); })
-        .catch(error => { console.error('Error adding question:', error); alert('Add failed: ' + error.message); });
+      db.collection('questions').add({ subject: sub, question, optionA, optionB, optionC, optionD, correctOption })
+        .then(() => { clearInputs(); loadQuestions(); });
     }
 
-    function deleteQuestion(id) { db.collection('questions').doc(id).delete().then(loadQuestions).catch(e=>{console.error('Delete error',e);}); }
-    function clearInputs() { ['questionInput','optionA','optionB','optionC','optionD','correctOption'].forEach(i=>document.getElementById(i).value=''); }
-
+    function deleteQuestion(id) { db.collection('questions').doc(id).delete().then(loadQuestions); }
+    function clearInputs() { ['questionInput','optionA','optionB','optionC','optionD','correctOption'].forEach(i => document.getElementById(i).value = ''); }
     function shuffle(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } }
   </script>
 </body>
