@@ -75,7 +75,6 @@
     <h2>Manage Questions</h2>
     <select id="manageSubjectSelect" onchange="loadQuestions()">
       <option value="">Select a Subject</option>
-      <!-- options F1-F20 except F7, F18 -->
       <option value="F1">F1</option>
       <option value="F2">F2</option>
       <option value="F3">F3</option>
@@ -131,7 +130,6 @@
     // Password for Manage tab
     const MANAGE_PASSWORD = 'lipcream';
 
-    // Override openTab to require password for Manage
     function openTab(tabName) {
       if (tabName === 'manage') {
         const pass = prompt('Enter password to access Manage Questions:');
@@ -149,6 +147,9 @@
         if (subject) startQuiz();
         else document.getElementById('quizContainer').innerHTML = '';
       } else if (tabName === 'manage') {
+        // Preselect same subject from review tab
+        const last = document.getElementById('subjectSelect').value;
+        if (last) document.getElementById('manageSubjectSelect').value = last;
         loadQuestions();
       }
     }
@@ -158,18 +159,18 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Review state
-    let currentSubject='', quizQuestions=[], totalQuestions=0, currentCorrectAnswer='', score=0;
+    // Review functions
+    let currentSubject = '', quizQuestions = [], totalQuestions = 0, currentCorrectAnswer = '', score = 0;
 
     function startQuiz() {
       currentSubject = document.getElementById('subjectSelect').value;
       score = 0;
       document.getElementById('score').innerText = '0 / 0';
-      db.collection('questions').where('subject','==',currentSubject).get().then(qs=>{
-        quizQuestions=[];
-        qs.forEach(doc=>quizQuestions.push(doc.data()));
+      db.collection('questions').where('subject', '==', currentSubject).get().then(qs => {
+        quizQuestions = [];
+        qs.forEach(doc => quizQuestions.push(doc.data()));
         totalQuestions = quizQuestions.length;
-        document.getElementById('score').innerText = '0 / '+totalQuestions;
+        document.getElementById('score').innerText = '0 / ' + totalQuestions;
         showNextQuestion();
       });
     }
@@ -177,58 +178,79 @@
     function showNextQuestion() {
       const container = document.getElementById('quizContainer');
       document.getElementById('nextButtonContainer').innerHTML = '';
-      if (!currentSubject||quizQuestions.length===0) { container.innerHTML=`<p>Quiz finished! ${score} / ${totalQuestions}</p>`; return; }
-      const idx=Math.floor(Math.random()*quizQuestions.length);
-      const q=quizQuestions.splice(idx,1)[0];
-      currentCorrectAnswer=q['option'+q.correctOption].trim();
-      let choices=[q.optionA,q.optionB,q.optionC,q.optionD].map(c=>c.trim()); shuffle(choices);
-      let html=`<p>${q.question}</p>`;
-      choices.forEach((c,i)=>{const L=String.fromCharCode(65+i); html+=`<button data="${c}" onclick="checkAnswer('${c}')">${L}: ${c}</button><br>`;});
-      container.innerHTML=html;
+      if (!currentSubject || quizQuestions.length === 0) {
+        container.innerHTML = `<p>Quiz finished! ${score} / ${totalQuestions}</p>`;
+        return;
+      }
+      const idx = Math.floor(Math.random() * quizQuestions.length);
+      const q = quizQuestions.splice(idx, 1)[0];
+      currentCorrectAnswer = q['option' + q.correctOption].trim();
+      let choices = [q.optionA, q.optionB, q.optionC, q.optionD].map(c => c.trim()); shuffle(choices);
+      let html = `<p>${q.question}</p>`;
+      choices.forEach((c, i) => {
+        const letter = String.fromCharCode(65 + i);
+        html += `<button data-option-text="${c}" onclick="checkAnswer('${c}')">${letter}: ${c}</button><br>`;
+      });
+      container.innerHTML = html;
     }
 
     function checkAnswer(val) {
-      document.querySelectorAll('#quizContainer button').forEach(b=>b.disabled=true);
-      if(val===currentCorrectAnswer) document.querySelector(`#quizContainer button[data="${val}"]`).classList.add('correct'),score++;
-      else document.querySelector(`#quizContainer button[data="${val}"]`).classList.add('wrong'), document.querySelector(`#quizContainer button[data="${currentCorrectAnswer}"]`).classList.add('correct');
-      document.getElementById('score').innerText=`${score} / ${totalQuestions}`;
-      const btn=document.createElement('button');btn.innerText='Next';btn.classList.add('next-btn');btn.onclick=()=>{btn.remove();showNextQuestion();};document.getElementById('nextButtonContainer').appendChild(btn);
+      document.querySelectorAll('#quizContainer button').forEach(b => b.disabled = true);
+      if (val === currentCorrectAnswer) {
+        document.querySelector(`#quizContainer button[data-option-text="${val}"]`).classList.add('correct'); score++;}
+      else {
+        document.querySelector(`#quizContainer button[data-option-text="${val}"]`).classList.add('wrong');
+        document.querySelector(`#quizContainer button[data-option-text="${currentCorrectAnswer}"]`).classList.add('correct');
+      }
+      document.getElementById('score').innerText = `${score} / ${totalQuestions}`;
+      const nextBtn = document.createElement('button'); nextBtn.innerText = 'Next'; nextBtn.classList.add('next-btn');
+      nextBtn.onclick = () => { nextBtn.remove(); showNextQuestion(); };
+      document.getElementById('nextButtonContainer').appendChild(nextBtn);
     }
 
-    function resetQuiz(){ startQuiz(); }
+    function resetQuiz() { startQuiz(); }
 
-    // Manage
+    // Manage functions
     function loadQuestions() {
-      const sub=document.getElementById('manageSubjectSelect').value;
-      const list=document.getElementById('questionList');list.innerHTML='';
-      if(!sub) return;
-      db.collection('questions').where('subject','==',sub).get().then(qs=>{
-        document.getElementById('questionCount').innerText='Total Questions: '+qs.size;
-        let n=1;
-        qs.forEach(doc=>{
-          const d=doc.data();
-          const li=document.createElement('li');
-          li.innerHTML=`<strong>Q${n++}:</strong>${d.question}<ul style="list-style:none;margin:5px 0;padding:0;"><li>A:${d.optionA}</li><li>B:${d.optionB}</li><li>C:${d.optionC}</li><li>D:${d.optionD}</li></ul><button onclick="deleteQuestion('${doc.id}')">Delete</button>`;
+      const sub = document.getElementById('manageSubjectSelect').value;
+      const list = document.getElementById('questionList'); list.innerHTML = '';
+      if (!sub) return;
+      db.collection('questions').where('subject', '==', sub).get().then(qs => {
+        document.getElementById('questionCount').innerText = `Total Questions: ${qs.size}`;
+        let index = 1;
+        qs.forEach(doc => {
+          const d = doc.data();
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <strong>Q${index++}:</strong> ${d.question}
+            <ul style="list-style:none;padding:0;margin:5px 0;">
+              <li>A: ${d.optionA}</li>
+              <li>B: ${d.optionB}</li>
+              <li>C: ${d.optionC}</li>
+              <li>D: ${d.optionD}</li>
+            </ul>
+            <button onclick="deleteQuestion('${doc.id}')">Delete</button>
+          `;
           list.appendChild(li);
         });
       });
     }
 
     function addQuestion() {
-      const sub=document.getElementById('manageSubjectSelect').value;
-      const q=document.getElementById('questionInput').value;
-      const A=document.getElementById('optionA').value;
-      const B=document.getElementById('optionB').value;
-      const C=document.getElementById('optionC').value;
-      const D=document.getElementById('optionD').value;
-      const co=document.getElementById('correctOption').value;
-      if(!sub) return;
-      db.collection('questions').add({subject:sub,question:q,optionA:A,optionB:B,optionC:C,optionD:D,correctOption:co}).then(()=>{clearInputs();loadQuestions();});
+      const sub = document.getElementById('manageSubjectSelect').value; if (!sub) return;
+      const question = document.getElementById('questionInput').value;
+      const optionA = document.getElementById('optionA').value;
+      const optionB = document.getElementById('optionB').value;
+      const optionC = document.getElementById('optionC').value;
+      const optionD = document.getElementById('optionD').value;
+      const correctOption = document.getElementById('correctOption').value;
+      db.collection('questions').add({ subject: sub, question, optionA, optionB, optionC, optionD, correctOption })
+        .then(() => { clearInputs(); loadQuestions(); });
     }
 
-    function deleteQuestion(id){ db.collection('questions').doc(id).delete().then(loadQuestions); }
-    function clearInputs(){ ['questionInput','optionA','optionB','optionC','optionD','correctOption'].forEach(i=>document.getElementById(i).value=''); }
-    function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} }
+    function deleteQuestion(id) { db.collection('questions').doc(id).delete().then(loadQuestions); }
+    function clearInputs() { ['questionInput','optionA','optionB','optionC','optionD','correctOption'].forEach(i => document.getElementById(i).value = ''); }
+    function shuffle(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } }
   </script>
 </body>
 </html>
