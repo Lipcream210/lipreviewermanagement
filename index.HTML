@@ -8,24 +8,45 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
   <style>
-    /* … your existing styles here … */
-    .next-btn { margin: 5px; }
+    @font-face { font-family: "Maersk Sans"; src: local("Maersk Sans"), local("MaerskSans"); }
+    body { font-family: 'Poppins', sans-serif; background: #181818; color: #E0E0E0; margin: 0; padding: 20px; text-align: center; }
+    .review-header { font-family: "Maersk Sans", sans-serif; font-size: 24px; margin-bottom: 10px; }
+    button, select, input { background: #292929; color: #E0E0E0; border: 1px solid #555; padding: 10px; margin: 5px; border-radius: 8px; cursor: pointer; transition: background 0.3s; }
+    button:hover { background: #444; }
+    .next-btn { font-size: 0.8em; padding: 8px 16px; background: #2196F3; color: #fff; border: none; border-radius: 5px; margin-bottom: 10px; }
+    .correct, .correct:hover { background: #2e7d32; color: white; }
+    .wrong, .wrong:hover { background: #E53935; color: white; }
+    .tab { display: none; padding: 20px; border-radius: 10px; background: #222; max-width: 600px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+    .active { display: block; }
+    h2 { border-bottom: 2px solid #444; padding-bottom: 10px; }
+    #quizContainer button { display: block; width: 100%; text-align: left; margin: 5px 0; }
+    #controlButtons { margin-top: 10px; }
+    #nextButtonContainer { margin-bottom: 10px; }
+    ul { list-style: none; padding: 0; }
+    li { background: #292929; padding: 10px; margin: 5px 0; border-radius: 5px; transition: background 0.3s; }
+    li:hover { background: #333; }
+    li > button { background: #ff5252; padding: 5px 10px; border: none; border-radius: 5px; transition: background 0.3s; }
+    li > button:hover { background: #ff1744; }
+    .form-group { display: flex; flex-direction: column; align-items: center; }
+    .form-group input, .form-group select { width: 80%; margin-bottom: 10px; padding: 10px; border-radius: 8px; border: 1px solid #555; background: #292929; color: #E0E0E0; }
+    .option-container { display: flex; justify-content: flex-start; margin-bottom: 10px; width: 80%; }
+    .option-container label { margin-right: 10px; font-weight: bold; width: 30px; text-align: left; }
   </style>
 </head>
 <body>
   <button onclick="openTab('review')">Review</button>
   <button onclick="openTab('manage')">Manage Questions</button>
 
+  <!-- Review Tab -->
   <div id="review" class="tab active">
     <h2 class="review-header">DECK MANAGEMENT LEVEL REVIEW</h2>
     <select id="subjectSelect" onchange="startQuiz()">
       <option value="">Select a Subject</option>
-      <!-- F1–F20 except F7, F18 -->
-      <option>F1</option><option>F2</option><option>F3</option><option>F4</option>
-      <option>F5</option><option>F6</option><option>F8</option><option>F9</option>
-      <option>F10</option><option>F11</option><option>F12</option><option>F13</option>
-      <option>F14</option><option>F15</option><option>F16</option><option>F17</option>
-      <option>F19</option><option>F20</option>
+      <option value="F1">F1</option><option value="F2">F2</option><option value="F3">F3</option><option value="F4">F4</option>
+      <option value="F5">F5</option><option value="F6">F6</option><option value="F8">F8</option><option value="F9">F9</option>
+      <option value="F10">F10</option><option value="F11">F11</option><option value="F12">F12</option><option value="F13">F13</option>
+      <option value="F14">F14</option><option value="F15">F15</option><option value="F16">F16</option><option value="F17">F17</option>
+      <option value="F19">F19</option><option value="F20">F20</option>
     </select>
     <div id="quizContainer"></div>
     <p id="score">0 / 0 (Answered: 0)</p>
@@ -35,8 +56,29 @@
     </div>
   </div>
 
+  <!-- Manage Questions Tab -->
   <div id="manage" class="tab">
-    <!-- … your manage-tab markup … -->
+    <h2>Manage Questions</h2>
+    <select id="manageSubjectSelect" onchange="loadQuestions()">
+      <option value="">Select a Subject</option>
+      <option value="F1">F1</option><option value="F2">F2</option><option value="F3">F3</option><option value="F4">F4</option>
+      <option value="F5">F5</option><option value="F6">F6</option><option value="F8">F8</option><option value="F9">F9</option>
+      <option value="F10">F10</option><option value="F11">F11</option><option value="F12">F12</option><option value="F13">F13</option>
+      <option value="F14">F14</option><option value="F15">F15</option><option value="F16">F16</option><option value="F17">F17</option>
+      <option value="F19">F19</option><option value="F20">F20</option>
+    </select>
+    <p id="questionCount"></p>
+    <div class="form-group">
+      <label for="questionInput">Enter Question:</label>
+      <input type="text" id="questionInput" placeholder="Enter Question">
+      <div class="option-container"><label for="optionA">A:</label><input type="text" id="optionA" placeholder="Option A"></div>
+      <div class="option-container"><label for="optionB">B:</label><input type="text" id="optionB" placeholder="Option B"></div>
+      <div class="option-container"><label for="optionC">C:</label><input type="text" id="optionC" placeholder="Option C"></div>
+      <div class="option-container"><label for="optionD">D:</label><input type="text" id="optionD" placeholder="Option D"></div>
+      <select id="correctOption"><option value="">Select Correct Option</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select>
+    </div>
+    <button onclick="addQuestion()">Add Question</button>
+    <ul id="questionList"></ul>
   </div>
 
   <script>
@@ -46,7 +88,8 @@
       if (tabName === 'manage') {
         const pass = prompt('Enter password to access Manage Questions:');
         if (pass !== MANAGE_PASSWORD) return alert('Incorrect password');
-        let last = document.getElementById('subjectSelect').value || 'F1';
+        // preselect last review subject or F1
+        const last = document.getElementById('subjectSelect').value || 'F1';
         document.getElementById('manageSubjectSelect').value = last;
         loadQuestions();
       }
@@ -58,9 +101,9 @@
       }
     }
 
-    // --- Firebase Init ---
+    // Firebase init
     firebase.initializeApp({
-      apiKey: "...",
+      apiKey: "AIzaSyAiMobrzS_1LRkEp5PRpcppN0oVag7V9Kk",
       authDomain: "lipreviewermanagement.firebaseapp.com",
       projectId: "lipreviewermanagement",
       storageBucket: "lipreviewermanagement.firebasestorage.app",
@@ -69,135 +112,128 @@
     });
     const db = firebase.firestore();
 
-    // --- Quiz State ---
+    // Quiz state
     let originalQuestions = [],
         quizQuestions     = [],
-        correctQuestions  = [],
         incorrectQuestions= [],
         totalQuestions    = 0,
-        currentSubject    = '',
         currentCorrect    = '',
         score             = 0,
         answeredCount     = 0;
 
     function startQuiz() {
-      currentSubject = document.getElementById('subjectSelect').value;
-      if (!currentSubject) return;
+      const sub = document.getElementById('subjectSelect').value;
+      if (!sub) return;
       score = answeredCount = 0;
-      correctQuestions = [];
       incorrectQuestions = [];
-      document.getElementById('score').innerText = '0 / 0 (Answered: 0)';
+      document.getElementById('score').innerText = `0 / 0 (Answered: 0)`;
       db.collection('questions')
-        .where('subject', '==', currentSubject)
+        .where('subject','==',sub)
         .get()
-        .then(snapshot => {
-          originalQuestions = snapshot.docs.map(d => d.data());
+        .then(snap => {
+          originalQuestions = snap.docs.map(d => d.data());
           quizQuestions     = originalQuestions.slice();
           totalQuestions    = quizQuestions.length;
           document.getElementById('score')
-                  .innerText = `0 / ${totalQuestions} (Answered: 0)`;
+            .innerText = `0 / ${totalQuestions} (Answered: 0)`;
           showNextQuestion();
         })
-        .catch(console.error);
+        .catch(e => console.error(e));
     }
 
     function showNextQuestion() {
       const container = document.getElementById('quizContainer');
       document.getElementById('nextButtonContainer').innerHTML = '';
-      if (quizQuestions.length === 0) {
-        return showSummary();
-      }
-      const idx = Math.floor(Math.random() * quizQuestions.length);
-      const q   = quizQuestions.splice(idx, 1)[0];
-      currentCorrect = q['option' + q.correctOption].trim();
-      let opts = [q.optionA, q.optionB, q.optionC, q.optionD].map(o => o.trim());
+      if (quizQuestions.length === 0) return showSummary();
+
+      const i = Math.floor(Math.random() * quizQuestions.length);
+      const q = quizQuestions.splice(i,1)[0];
+      currentCorrect = q['option'+q.correctOption].trim();
+
+      let opts = [q.optionA, q.optionB, q.optionC, q.optionD].map(o=>o.trim());
       shuffle(opts);
       let html = `<p>${q.question}</p>`;
-      opts.forEach((opt, i) => {
-        const L = String.fromCharCode(65 + i);
-        html += `<button data-opt="${opt}" onclick="checkAnswer('${opt}')">
-                   ${L}: ${opt}
-                 </button><br>`;
+      opts.forEach((opt,j) => {
+        const L = String.fromCharCode(65+j);
+        html += `<button data-opt="${opt}" onclick="checkAnswer('${opt}')">${L}: ${opt}</button><br>`;
       });
       container.innerHTML = html;
     }
 
     function checkAnswer(selected) {
       answeredCount++;
-      score += (selected.trim() === currentCorrect) ? (() => {
-        correctQuestions.push(currentQuestion());
-        return 1;
-      })() : (() => {
-        incorrectQuestions.push(currentQuestion());
-        return 0;
-      })();
-      document.querySelectorAll('#quizContainer button')
-              .forEach(btn => btn.disabled = true);
-      document.querySelector(`#quizContainer button[data-opt="${selected}"]`)
-              .classList.add(
-                selected.trim() === currentCorrect ? 'correct' : 'wrong'
-              );
+      if (selected.trim() === currentCorrect) {
+        score++;
+      } else {
+        incorrectQuestions.push({ question: document.querySelector('#quizContainer p').innerText, selected, correct: currentCorrect });
+      }
+      document.querySelectorAll('#quizContainer button').forEach(b=>b.disabled=true);
+      document.querySelector(`#quizContainer button[data-opt="${selected}"]`).classList.add(
+        selected.trim() === currentCorrect ? 'correct' : 'wrong'
+      );
       if (selected.trim() !== currentCorrect) {
-        document.querySelector(`#quizContainer button[data-opt="${currentCorrect}"]`)
-                .classList.add('correct');
+        document.querySelector(`#quizContainer button[data-opt="${currentCorrect}"]`).classList.add('correct');
       }
       document.getElementById('score')
-              .innerText = `${score} / ${totalQuestions} (Answered: ${answeredCount})`;
-      const next = document.createElement('button');
-      next.innerText = 'Next';
-      next.classList.add('next-btn');
-      next.onclick = () => { next.remove(); showNextQuestion(); };
-      document.getElementById('nextButtonContainer').appendChild(next);
+        .innerText = `${score} / ${totalQuestions} (Answered: ${answeredCount})`;
+
+      const btn = document.createElement('button');
+      btn.innerText = 'Next';
+      btn.classList.add('next-btn');
+      btn.onclick = () => { btn.remove(); showNextQuestion(); };
+      document.getElementById('nextButtonContainer').appendChild(btn);
     }
 
     function showSummary() {
       const container = document.getElementById('quizContainer');
       container.innerHTML = `
         <p>Quiz finished! ${score} / ${totalQuestions} (Answered: ${answeredCount})</p>
-        ${correctQuestions.length>0
-          ? '<button id="retakeCorrect" class="next-btn">Retake Correct</button>'
+        ${incorrectQuestions.length > 0
+          ? '<button id="retakeIncorrect" class="next-btn">Retake Incorrect</button>'
           : ''}
-        <button id="retakeAll"      class="next-btn">Retake All</button>
-        <button id="chooseSubject"  class="next-btn">Choose Another Subject</button>
+        <button id="retakeAll" class="next-btn">Retake All</button>
+        <button id="chooseSubject" class="next-btn">Choose Another Subject</button>
       `;
-      if (correctQuestions.length>0) {
-        document.getElementById('retakeCorrect')
+
+      if (incorrectQuestions.length > 0) {
+        document.getElementById('retakeIncorrect')
           .addEventListener('click', () => {
-            quizQuestions = correctQuestions.slice();
+            quizQuestions  = incorrectQuestions.map(i => ({
+              question: i.question,
+              optionA: i.selected,    // placeholder; options get reshuffled
+              optionB: i.correct,     // actual usage is just to drill
+              optionC: i.correct,
+              optionD: i.correct,
+              correctOption: 'B'
+            }));
             totalQuestions = quizQuestions.length;
             score = answeredCount = 0;
             document.getElementById('score')
-                    .innerText = `0 / ${totalQuestions} (Answered: 0)`;
+              .innerText = `0 / ${totalQuestions} (Answered: 0)`;
             showNextQuestion();
           });
       }
+
       document.getElementById('retakeAll')
         .addEventListener('click', () => {
-          quizQuestions = originalQuestions.slice();
+          quizQuestions  = originalQuestions.slice();
           totalQuestions = quizQuestions.length;
           score = answeredCount = 0;
           document.getElementById('score')
-                  .innerText = `0 / ${totalQuestions} (Answered: 0)`;
+            .innerText = `0 / ${totalQuestions} (Answered: 0)`;
           showNextQuestion();
         });
+
       document.getElementById('chooseSubject')
         .addEventListener('click', () => {
           document.getElementById('subjectSelect').value = '';
           container.innerHTML = '';
           document.getElementById('score')
-                  .innerText = '0 / 0 (Answered: 0)';
+            .innerText = `0 / 0 (Answered: 0)`;
         });
     }
 
     function resetQuiz() { startQuiz(); }
-
-    function currentQuestion() {
-      // last served question is the one we just answered
-      // we can retrieve it by looking at answeredCount index
-      // but simpler: re-add logic to pass it in checkAnswer
-      // for brevity we’ll assume we saved it globally:
-      return lastQuestion;
-    }
 
     function shuffle(arr) {
       for (let i = arr.length - 1; i > 0; i--) {
