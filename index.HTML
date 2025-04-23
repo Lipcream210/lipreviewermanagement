@@ -86,9 +86,16 @@
 
     function openTab(tabName) {
       if (tabName === 'manage') {
-        const pass = prompt('Enter password to access Manage Questions:');
-        if (pass !== MANAGE_PASSWORD) return alert('Incorrect password');
-        // preselect last review subject or F1
+        const raw = prompt('Enter password to access Manage Questions:');
+        if (raw === null) return; // user cancelled
+        const pass = raw.trim().toLowerCase();
+        console.log('Password entered:', raw, 'normalized:', pass);
+        if (pass !== MANAGE_PASSWORD) {
+          alert('Incorrect password');
+          console.log('Manage access denied');
+          return;
+        }
+        console.log('Manage access granted');
         const last = document.getElementById('subjectSelect').value || 'F1';
         document.getElementById('manageSubjectSelect').value = last;
         loadQuestions();
@@ -145,12 +152,10 @@
       const container = document.getElementById('quizContainer');
       document.getElementById('nextButtonContainer').innerHTML = '';
       if (quizQuestions.length === 0) return showSummary();
-
       const i = Math.floor(Math.random() * quizQuestions.length);
       const q = quizQuestions.splice(i,1)[0];
       currentCorrect = q['option'+q.correctOption].trim();
-
-      let opts = [q.optionA, q.optionB, q.optionC, q.optionD].map(o=>o.trim());
+      let opts = [q.optionA, q.optionB, q.optionC, q.optionD].map(o => o.trim());
       shuffle(opts);
       let html = `<p>${q.question}</p>`;
       opts.forEach((opt,j) => {
@@ -162,21 +167,24 @@
 
     function checkAnswer(selected) {
       answeredCount++;
-      if (selected.trim() === currentCorrect) {
-        score++;
-      } else {
-        incorrectQuestions.push({ question: document.querySelector('#quizContainer p').innerText, selected, correct: currentCorrect });
-      }
-      document.querySelectorAll('#quizContainer button').forEach(b=>b.disabled=true);
-      document.querySelector(`#quizContainer button[data-opt="${selected}"]`).classList.add(
-        selected.trim() === currentCorrect ? 'correct' : 'wrong'
-      );
       if (selected.trim() !== currentCorrect) {
-        document.querySelector(`#quizContainer button[data-opt="${currentCorrect}"]`).classList.add('correct');
+        incorrectQuestions.push({
+          question: document.querySelector('#quizContainer p').innerText,
+          selected,
+          correct: currentCorrect
+        });
+      } else {
+        score++;
+      }
+      document.querySelectorAll('#quizContainer button').forEach(b => b.disabled = true);
+      document.querySelector(`#quizContainer button[data-opt="${selected}"]`)
+        .classList.add(selected.trim() === currentCorrect ? 'correct' : 'wrong');
+      if (selected.trim() !== currentCorrect) {
+        document.querySelector(`#quizContainer button[data-opt="${currentCorrect}"]`)
+          .classList.add('correct');
       }
       document.getElementById('score')
         .innerText = `${score} / ${totalQuestions} (Answered: ${answeredCount})`;
-
       const btn = document.createElement('button');
       btn.innerText = 'Next';
       btn.classList.add('next-btn');
@@ -191,17 +199,16 @@
         ${incorrectQuestions.length > 0
           ? '<button id="retakeIncorrect" class="next-btn">Retake Incorrect</button>'
           : ''}
-        <button id="retakeAll" class="next-btn">Retake All</button>
+        <button id="retakeAll"     class="next-btn">Retake All</button>
         <button id="chooseSubject" class="next-btn">Choose Another Subject</button>
       `;
-
       if (incorrectQuestions.length > 0) {
         document.getElementById('retakeIncorrect')
           .addEventListener('click', () => {
             quizQuestions  = incorrectQuestions.map(i => ({
               question: i.question,
-              optionA: i.selected,    // placeholder; options get reshuffled
-              optionB: i.correct,     // actual usage is just to drill
+              optionA: i.selected,
+              optionB: i.correct,
               optionC: i.correct,
               optionD: i.correct,
               correctOption: 'B'
@@ -213,7 +220,6 @@
             showNextQuestion();
           });
       }
-
       document.getElementById('retakeAll')
         .addEventListener('click', () => {
           quizQuestions  = originalQuestions.slice();
@@ -223,7 +229,6 @@
             .innerText = `0 / ${totalQuestions} (Answered: 0)`;
           showNextQuestion();
         });
-
       document.getElementById('chooseSubject')
         .addEventListener('click', () => {
           document.getElementById('subjectSelect').value = '';
@@ -235,9 +240,63 @@
 
     function resetQuiz() { startQuiz(); }
 
+    function loadQuestions() {
+      const sub = document.getElementById('manageSubjectSelect').value;
+      const list = document.getElementById('questionList'); list.innerHTML = '';
+      if (!sub) return;
+      db.collection('questions')
+        .where('subject','==',sub)
+        .get()
+        .then(snap => {
+          document.getElementById('questionCount').innerText = 'Total Questions: ' + snap.size;
+          let n = 1;
+          snap.forEach(doc => {
+            const d = doc.data();
+            const li = document.createElement('li');
+            li.innerHTML = `
+              <strong>Q${n++}:</strong> ${d.question}
+              <ul style="list-style:none;padding:0;margin:5px 0;">
+                <li>A: ${d.optionA}</li>
+                <li>B: ${d.optionB}</li>
+                <li>C: ${d.optionC}</li>
+                <li>D: ${d.optionD}</li>
+              </ul>
+              <button onclick="deleteQuestion('${doc.id}')">Delete</button>
+            `;
+            list.appendChild(li);
+          });
+        })
+        .catch(e => console.error(e));
+    }
+
+    function addQuestion() {
+      const sub = document.getElementById('manageSubjectSelect').value;
+      if (!sub) return;
+      const q  = document.getElementById('questionInput').value;
+      const A  = document.getElementById('optionA').value;
+      const B  = document.getElementById('optionB').value;
+      const C  = document.getElementById('optionC').value;
+      const D  = document.getElementById('optionD').value;
+      const co = document.getElementById('correctOption').value;
+      db.collection('questions').add({ subject: sub, question: q, optionA: A, optionB: B, optionC: C, optionD: D, correctOption: co })
+        .then(() => { clearInputs(); loadQuestions(); })
+        .catch(e => console.error(e));
+    }
+
+    function deleteQuestion(id) {
+      db.collection('questions').doc(id).delete()
+        .then(loadQuestions)
+        .catch(e => console.error(e));
+    }
+
+    function clearInputs() {
+      ['questionInput','optionA','optionB','optionC','optionD','correctOption']
+        .forEach(id => document.getElementById(id).value = '');
+    }
+
     function shuffle(arr) {
-      for (let i = arr.length - 1; i > 0; i--) {
-        let j = Math.floor(Math.random() * (i + 1));
+      for (let i = arr.length -1; i > 0; i--) {
+        let j = Math.floor(Math.random()*(i+1));
         [arr[i], arr[j]] = [arr[j], arr[i]];
       }
     }
